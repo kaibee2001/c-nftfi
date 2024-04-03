@@ -1,0 +1,40 @@
+{
+  "name": "c-nftfi",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "export SET NODE_OPTIONS=--openssl-legacy-provider && next dev",
+    "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && next build",
+    "start": "export SET NODE_OPTIONS=--openssl-legacy-provider && next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "@metamask/sdk-react": "^0.14.2",
+    "@mui/material": "^5.15.6",
+    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-waffle": "^2.0.2",
+    "@openzeppelin/contracts": "^4.5.0",
+    "axios": "^0.26.0",
+    "bootstrap": "^5.3.3",
+    "chai": "^4.3.6",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.19.1",
+    "ipfs-http-client": "^56.0.3",
+    "next": "11.0.1",
+    "react": "17.0.2",
+    "react-bootstrap": "^2.10.1",
+    "react-dom": "17.0.2",
+    "web3modal": "^1.9.5",
+    "web3": "^1.0.0-beta.31"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.2.6",
+    "eslint": "7.29.0",
+    "eslint-config-next": "11.0.1",
+    "postcss": "^8.3.5",
+    "tailwindcss": "^2.2.4"
+  }
+}
