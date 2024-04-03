@@ -15,7 +15,7 @@ export default function ResellNFT() {
   const router = useRouter()
   const { id, tokenURI } = router.query
   const { image, price } = formInput
-
+  conso
   useEffect(() => {
     fetchNFT()
   }, [id])
@@ -28,18 +28,18 @@ export default function ResellNFT() {
 
   async function listNFTForSale() {
     if (!price) return
-    const web3Modal = new Web3Modal()
-    const connection = await web3Modal.connect()
-    const provider = new ethers.providers.Web3Provider(connection)
-    const signer = provider.getSigner()
+    // const web3Modal = new Web3Modal()
+    // const connection = await web3Modal.connect()
+    // const provider = new ethers.providers.Web3Provider(connection)
+    // const signer = provider.getSigner()
 
-    const priceFormatted = ethers.utils.parseUnits(formInput.price, 'ether')
-    let contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
-    let listingPrice = await contract.getListingPrice()
+    // const priceFormatted = ethers.utils.parseUnits(formInput.price, 'ether')
+    // let contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
+    // let listingPrice = await contract.getListingPrice()
 
-    listingPrice = listingPrice.toString()
-    let transaction = await contract.resellToken(id, priceFormatted, { value: listingPrice })
-    await transaction.wait()
+    // listingPrice = listingPrice.toString()
+    // let transaction = await contract.resellToken(id, priceFormatted, { value: listingPrice })
+    // await transaction.wait()
    
     router.push('/')
   }

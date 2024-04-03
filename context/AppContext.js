@@ -1,64 +1,34 @@
-import React, { createContext, useEffect, useState } from "react";
+'use client'
 
-export const AppContext = createContext();
+import React, { ReactNode } from 'react'
+import { config, projectId } from './web3Config'
 
-const { ethereum } = typeof window !== "undefined" ? window : {};
+import { createWeb3Modal } from '@web3modal/wagmi/react'
 
-const AppProvider = ({ children }) => {
-  const [account, setAccount] = useState("");
-  const [error, setError] = useState("");
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-  const checkEthereumExists = () => {
-    if (!ethereum) {
-      setError("Please Install MetaMask.");
-      return false;
-    }
-    return true;
-  };
-  const getConnectedAccounts = async () => {
-    setError("");
-    try {
-      const accounts = await ethereum.request({
-        method: "eth_accounts",
-      });
-      console.log(accounts);
-      setAccount(accounts[0]);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-  const connectWallet = async () => {
-    setError("");
-    if (checkEthereumExists()) {
-      try {
-        const accounts = await ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        console.log(accounts);
-        setAccount(accounts[0]);
-      } catch (err) {
-        setError(err.message);
-      }
-    }
-  };
+import { State, WagmiProvider } from 'wagmi'
 
-  useEffect(() => {
-    if (checkEthereumExists()) {
-      ethereum.on("accountsChanged", getConnectedAccounts);
-      getConnectedAccounts();
-    }
-    return () => {
-      if (checkEthereumExists()) {
-        ethereum.removeListener("accountsChanged", getConnectedAccounts);
-      }
-    };
-  }, []);
+// Setup queryClient
+const queryClient = new QueryClient()
 
+if (!projectId) throw new Error('Project ID is not defined')
+
+// Create modal
+createWeb3Modal({
+  wagmiConfig: config,
+  projectId,
+  enableAnalytics: true, // Optional - defaults to your Cloud configuration
+  enableOnramp: true // Optional - false as default
+})
+
+export default function Web3ModalProvider({
+  children,
+  initialState
+}) {
   return (
-    <AppContext.Provider value={{ account, connectWallet, error }}>
-      {children}
-    </AppContext.Provider>
-  );
-};
-
-export default AppProvider;
+    <WagmiProvider config={config} initialState={initialState}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </WagmiProvider>
+  )
+}
