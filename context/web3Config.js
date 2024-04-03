@@ -1,6 +1,6 @@
 import { defaultWagmiConfig } from '@web3modal/wagmi/react/config'
 
-import { createStorage } from 'wagmi'
+import { createConfig, createStorage, http } from 'wagmi'
 import { mainnet, sepolia } from 'wagmi/chains'
 
 // Get projectId at https://cloud.walletconnect.com
@@ -43,10 +43,13 @@ export const myChain = {
 
 // Create wagmiConfig
 const chains = [myChain]
-export const config = defaultWagmiConfig({
+export const config = createConfig({
   chains,
   projectId,
   metadata,
   ssr: true,
+  transports: {
+    9000: http()
+  }
   // ...wagmiOptions // Optional - Override createConfig parameters
 })

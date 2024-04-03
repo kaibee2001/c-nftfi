@@ -9,42 +9,60 @@ import {
 } from '../config'
 
 import NFTMarketplace from '../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json'
+import { useReadContract, useReadContracts } from 'wagmi'
 
+const common = {
+  abi: NFTMarketplace.abi,
+  address: marketplaceAddress,
+};
 export default function MyAssets() {
   const [nfts, setNfts] = useState([])
   const [loadingState, setLoadingState] = useState('not-loaded')
   const router = useRouter()
+
+  const { data: items } = useReadContract({
+    ...common,
+    functionName: "fetchMyNFTs"
+  });
+
+  const { data: tokenURIs } = useReadContracts({
+    contracts: [
+      ...(items?.map(item => ({
+        ...common,
+        functionName: "tokenURI",
+        args: [item.tokenId]
+      })) ?? [])
+    ],
+    query: {
+      enabled: !!items
+    }
+  })
+
   useEffect(() => {
     loadNFTs()
-  }, [])
+  }, [tokenURIs])
+
+
+
   async function loadNFTs() {
-    const web3Modal = new Web3Modal({
-      network: "mainnet",
-      cacheProvider: true,
-    })
-    const connection = await web3Modal.connect()
-    const provider = new ethers.providers.Web3Provider(connection)
-    const signer = provider.getSigner()
+    if (tokenURIs) {
+      const items = await Promise.all(tokenURIs.map(async i => {
+        const meta = await axios.get(tokenURI)
+        let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
+        let item = {
+          price,
+          tokenId: i.tokenId.toNumber(),
+          seller: i.seller,
+          owner: i.owner,
+          image: meta.data.image,
+          tokenURI
+        }
+        return item
+      }))
+      setNfts(items)
+      setLoadingState('loaded')
+    }
 
-    const marketplaceContract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
-    const data = await marketplaceContract.fetchMyNFTs()
-
-    const items = await Promise.all(data.map(async i => {
-      const tokenURI = await marketplaceContract.tokenURI(i.tokenId)
-      const meta = await axios.get(tokenURI)
-      let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
-      let item = {
-        price,
-        tokenId: i.tokenId.toNumber(),
-        seller: i.seller,
-        owner: i.owner,
-        image: meta.data.image,
-        tokenURI
-      }
-      return item
-    }))
-    setNfts(items)
-    setLoadingState('loaded') 
   }
   function listNFT(nft) {
     console.log('nft:', nft)
