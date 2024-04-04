@@ -9,14 +9,21 @@ import {
 } from '../config'
 
 import NFTMarketplace from '../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json'
+import { useAccount } from 'wagmi'
 
 export default function MyAssets() {
   const [nfts, setNfts] = useState([])
   const [loadingState, setLoadingState] = useState('not-loaded')
   const router = useRouter()
+  const account = useAccount()
   useEffect(() => {
-    loadNFTs()
-  }, [])
+    if (account.address) {
+      loadNFTs()
+    } else {
+      setNfts([])
+    }
+  }, [account.address])
+
   async function loadNFTs() {
     const web3Modal = new Web3Modal({
       network: "mainnet",
@@ -25,8 +32,6 @@ export default function MyAssets() {
     const connection = await web3Modal.connect()
     const provider = new ethers.providers.Web3Provider(connection)
     const signer = provider.getSigner()
-
-    console.log(signer, "signer");
 
     const marketplaceContract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
     const data = await marketplaceContract.fetchMyNFTs()
