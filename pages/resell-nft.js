@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react'
+import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import Web3Modal from 'web3modal'
+
+import {
+  marketplaceAddress
+} from '../config'
+
 import NFTMarketplace from '../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json'
-import { useWriteContract, useReadContract } from 'wagmi'
-import { marketplaceAddress } from '../config'
 
 export default function ResellNFT() {
   const [formInput, updateFormInput] = useState({ price: '', image: '' })
   const router = useRouter()
   const { id, tokenURI } = router.query
   const { image, price } = formInput
-  const { writeContractAsync } = useWriteContract()
-  const { data: listingPrice } = useReadContract({
-    abi: NFTMarketplace.abi,
-    address: marketplaceAddress,
-    functionName: 'getListingPrice',
-  })
+
   useEffect(() => {
     fetchNFT()
   }, [id])
@@ -26,31 +26,22 @@ export default function ResellNFT() {
     updateFormInput(state => ({ ...state, image: meta.data.image }))
   }
 
-
-
   async function listNFTForSale() {
     if (!price) return
+    const web3Modal = new Web3Modal()
+    const connection = await web3Modal.connect()
+    const provider = new ethers.providers.Web3Provider(connection)
+    const signer = provider.getSigner()
 
     const priceFormatted = ethers.utils.parseUnits(formInput.price, 'ether')
-    try {
-      const tx = await writeContractAsync({
-        abi: NFTMarketplace.abi,
-        address: marketplaceAddress,
-        functionName: "resellToken",
-        args: [
-          id,
-          priceFormatted,
-          listingPrice + ""
-        ]
-      })
-      console.log("tx hash: ", tx)
-      router.push('/')
+    let contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
+    let listingPrice = await contract.getListingPrice()
 
-    } catch (error) {
-      console.log(error)
-    }
-
-
+    listingPrice = listingPrice.toString()
+    let transaction = await contract.resellToken(id, priceFormatted, { value: listingPrice })
+    await transaction.wait()
+   
+    router.push('/')
   }
 
   return (

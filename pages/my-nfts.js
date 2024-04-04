@@ -26,6 +26,8 @@ export default function MyAssets() {
     const provider = new ethers.providers.Web3Provider(connection)
     const signer = provider.getSigner()
 
+    console.log(signer, "signer");
+
     const marketplaceContract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
     const data = await marketplaceContract.fetchMyNFTs()
 
