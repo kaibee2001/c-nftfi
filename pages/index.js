@@ -8,85 +8,59 @@ import {
 } from '../config'
 
 import NFTMarketplace from '../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json'
-import { useAccount, useBalance, useReadContract, useReadContracts } from 'wagmi'
 
 export default function Home() {
   const [nfts, setNfts] = useState([])
   const [loadingState, setLoadingState] = useState('not-loaded')
-  const account = useAccount()
-  
-  const { data: items } = useReadContract({
-    address: marketplaceAddress,
-    abi: NFTMarketplace.abi,
-    functionName: "fetchMarketItems",
-    query: {enabled: true}
-  })
-
-  console.log(items)
-
-  const { data: tokenURIs } = useReadContracts({
-    contracts: [
-      ...(items?.map(item => ({
-        ...common,
-        functionName: "tokenURI",
-        args: [item.tokenId]
-      })) ?? [])
-    ],
-    query: {
-      enabled: !!items
-    }
-  })
   useEffect(() => {
     loadNFTs()
-  }, [tokenURIs])
+  }, [])
   async function loadNFTs() {
     /* create a generic provider and query for unsold market items */
-    // const provider = new ethers.providers.JsonRpcProvider("http://103.252.1.159:8545")
-    // const contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, provider)
-    // const data = await contract.fetchMarketItems()
+    const provider = new ethers.providers.JsonRpcProvider("http://103.252.1.159:8545")
+    const contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, provider)
+    const data = await contract.fetchMarketItems()
 
     /*
     *  map over items returned from smart contract and format 
     *  them as well as fetch their token metadata
     */
-    if (tokenURIs) {
-      const items = await Promise.all(tokenURIs.map(async i => {
-        const tokenUri = await contract.tokenURI(i.tokenId)
-        const meta = await axios.get(tokenUri)
-        let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
-        let item = {
-          price,
-          tokenId: i.tokenId.toNumber(),
-          seller: i.seller,
-          owner: i.owner,
-          image: meta.data.image,
-          name: meta.data.name,
-          description: meta.data.description,
-        }
-        return item
-      }))
-      setNfts(items)
-      setLoadingState('loaded')
-    }
 
+    const items = await Promise.all(data.map(async i => {
+      const tokenUri = await contract.tokenURI(i.tokenId)
+      const meta = await axios.get(tokenUri)
+      let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
+      let item = {
+        price,
+        tokenId: i.tokenId.toNumber(),
+        seller: i.seller,
+        owner: i.owner,
+        image: meta.data.image,
+        name: meta.data.name,
+        description: meta.data.description,
+      }
+      return item
+    }))
+    setNfts(items)
+    setLoadingState('loaded') 
   }
   async function buyNft(nft) {
     /* needs the user to sign the transaction, so will use Web3Provider and sign it */
-    // const web3Modal = new Web3Modal()
-    // const connection = await web3Modal.connect()
-    // const provider = new ethers.providers.Web3Provider(connection)
-    // const signer = provider.getSigner()
-    // const contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
+    const web3Modal = new Web3Modal()
+    const connection = await web3Modal.connect()
+    const provider = new ethers.providers.Web3Provider(connection)
+    const signer = provider.getSigner()
+    const contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
 
-    // /* user will be prompted to pay the asking proces to complete the transaction */
-    // const price = ethers.utils.parseUnits(nft.price.toString(), 'ether')
-    // const transaction = await contract.createMarketSale(nft.tokenId, {
-    //   value: price
-    // })
-    // await transaction.wait()
-    // loadNFTs()
+    /* user will be prompted to pay the asking proces to complete the transaction */
+    const price = ethers.utils.parseUnits(nft.price.toString(), 'ether')   
+    const transaction = await contract.createMarketSale(nft.tokenId, {
+      value: price
+    })
+    await transaction.wait()
+    loadNFTs()
   }
-
+  
   if (loadingState === 'loaded' && !nfts.length) return (<h1 className="px-20 py-10 text-3xl">No items in marketplace</h1>)
   return (
     <div className="flex justify-center">

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ethers } from 'ethers'
 import { create as ipfsHttpClient } from 'ipfs-http-client'
 import { useRouter } from 'next/router'
+import Web3Modal from 'web3modal'
 
 const projectId = '2OdM18NSh1dijfz4i42B7zat4wq';
 const projectSecret = 'b1d224681d5e870b09f87a28a22355a0';
@@ -14,7 +15,7 @@ const client = ipfsHttpClient({
   protocol: 'https',
   // apiPath:'/api/v0/',
   headers: {
-    authorization: auth,
+      authorization: auth,
   }
 });
 
@@ -23,8 +24,6 @@ import {
 } from '../config'
 
 import NFTMarketplace from '../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json'
-import { useReadContract, useWriteContract } from 'wagmi';
-// import { useReadContract, useWriteContract } from 'wagmi'
 
 export default function CreateItem() {
   const [fileUrl, setFileUrl] = useState(null)
@@ -45,7 +44,7 @@ export default function CreateItem() {
       setFileUrl(url)
     } catch (error) {
       console.log('Error uploading file: ', error)
-    }
+    }  
   }
   async function uploadToIPFS() {
     const { name, description, price } = formInput
@@ -61,56 +60,31 @@ export default function CreateItem() {
       return url
     } catch (error) {
       console.log('Error uploading file: ', error)
-    }
+    }  
   }
-
-  const { writeContractAsync } = useWriteContract()
-  const { data: listingPrice, refetch } = useReadContract({
-    abi: NFTMarketplace.abi,
-    address: marketplaceAddress,
-    functionName: 'getListingPrice',
-  })
-
-  useEffect(() => {
-    refetch()
-  }, [])
-
-  console.log(listingPrice)
 
   async function listNFTForSale() {
     const url = await uploadToIPFS()
-    // const web3Modal = new Web3Modal()
-    // const connection = await web3Modal.connect()
-    // const provider = new ethers.providers.Web3Provider(connection)
-    // const signer = provider.getSigner()
+    const web3Modal = new Web3Modal()
+    const connection = await web3Modal.connect()
+    const provider = new ethers.providers.Web3Provider(connection)
+    const signer = provider.getSigner()
 
     /* next, create the item */
     const price = ethers.utils.parseUnits(formInput.price, 'ether')
-    // let contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
-    // let listingPrice = await contract.getListingPrice()
-    // listingPrice = listingPrice.toString()
-    // let transaction = await contract.createToken(url, price, { value: listingPrice })
-    // await transaction.wait()
-
-    const ts = await writeContractAsync({
-      abi: NFTMarketplace.abi,
-      address: marketplaceAddress,
-      functionName: "createToken",
-      args: [
-        url,
-        price,
-      ],
-      value: "1000000000000000000" + ""
-    })
-
-    console.log("tx hash: ", tx)
+    let contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
+    let listingPrice = await contract.getListingPrice()
+    listingPrice = listingPrice.toString()
+    let transaction = await contract.createToken(url, price, { value: listingPrice })
+    await transaction.wait()
+   
     router.push('/')
   }
 
   return (
     <div className="flex justify-center">
       <div className="w-1/2 flex flex-col pb-12">
-        <input
+        <input 
           placeholder="Asset Name"
           className="mt-8 border rounded p-4"
           onChange={e => updateFormInput({ ...formInput, name: e.target.value })}
